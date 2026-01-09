@@ -1,0 +1,33 @@
+{
+  "accuracy": 0.8149239655782152,
+  "macro_f1": 0.7082668624525404,
+  "micro_f1": null,
+  "num_examples": 8483,
+  "top5_confusions": [
+    {
+      "gold": "/location/location/contains",
+      "pred": "/location/country/capital",
+      "count": 603
+    },
+    {
+      "gold": "/location/country/administrative_divisions",
+      "pred": "/location/country/capital",
+      "count": 261
+    },
+    {
+      "gold": "/location/location/contains",
+      "pred": "/location/country/administrative_divisions",
+      "count": 185
+    },
+    {
+      "gold": "/people/person/place_of_birth",
+      "pred": "/people/person/place_lived",
+      "count": 91
+    },
+    {
+      "gold": "/location/country/administrative_divisions",
+      "pred": "/location/location/contains",
+      "count": 67
+    }
+  ]
+}

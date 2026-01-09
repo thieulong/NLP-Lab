@@ -1,0 +1,42 @@
+{
+  "input": "Neural/RE/processed/nyt_re_test.jsonl",
+  "model_dir": "Neural/RE/models/spanbert_nyt_re",
+  "processed_dir": "Neural/RE/processed",
+  "out_dir": "Neural/RE/exports",
+  "threshold": 0.8,
+  "min_conf": 0.5,
+  "margin": 0.15,
+  "top_k": 5,
+  "batch_size": 64,
+  "max_length": 256,
+  "max_rows": 0,
+  "drop_labels": [],
+  "seen": 8483,
+  "kept": 6190,
+  "dropped_by_label": 0,
+  "dropped_by_filter": 2293,
+  "kept_ratio": 0.7296946834846163,
+  "label_counts": {
+    "/location/location/contains": 3164,
+    "/people/person/place_lived": 581,
+    "/location/administrative_division/country": 568,
+    "/people/person/nationality": 553,
+    "/business/person/company": 411,
+    "/location/neighborhood/neighborhood_of": 385,
+    "/people/person/place_of_birth": 130,
+    "/people/deceased_person/place_of_death": 82,
+    "/location/country/administrative_divisions": 58,
+    "/business/company/founders": 57,
+    "/location/country/capital": 43,
+    "/people/person/children": 42,
+    "/business/company/place_founded": 34,
+    "/business/company/major_shareholders": 30,
+    "/business/company_shareholder/major_shareholder_of": 30,
+    "/sports/sports_team_location/teams": 11,
+    "/sports/sports_team/location": 11
+  },
+  "outputs": {
+    "csv": "Neural/RE/exports/edges.csv",
+    "jsonl": "Neural/RE/exports/edges.jsonl"
+  }
+}

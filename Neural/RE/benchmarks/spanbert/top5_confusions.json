@@ -1,0 +1,27 @@
+[
+  {
+    "gold": "/location/location/contains",
+    "pred": "/location/country/capital",
+    "count": 603
+  },
+  {
+    "gold": "/location/country/administrative_divisions",
+    "pred": "/location/country/capital",
+    "count": 261
+  },
+  {
+    "gold": "/location/location/contains",
+    "pred": "/location/country/administrative_divisions",
+    "count": 185
+  },
+  {
+    "gold": "/people/person/place_of_birth",
+    "pred": "/people/person/place_lived",
+    "count": 91
+  },
+  {
+    "gold": "/location/country/administrative_divisions",
+    "pred": "/location/location/contains",
+    "count": 67
+  }
+]

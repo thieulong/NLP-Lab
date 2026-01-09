@@ -1,0 +1,16 @@
+{
+  "num_sentences": 5,
+  "spanbert_edges": 38,
+  "llm_edges": 45,
+  "spanbert_settings": {
+    "min_conf": 0.5,
+    "margin": 0.15,
+    "max_pairs_per_sent": 30
+  },
+  "llm_settings": {
+    "enabled": true,
+    "model": "qwen2.5:7b-instruct",
+    "temperature": 0.0,
+    "num_predict": 256
+  }
+}

@@ -1,0 +1,28 @@
+,precision,recall,f1-score,support
+/business/company/advisors,0.0,0.0,0.0,0.0
+/business/company/founders,0.0,0.0,0.0,1.0
+/business/company/industry,0.0,0.0,0.0,0.0
+/business/company/major_shareholders,0.0,0.0,0.0,0.0
+/business/company/place_founded,0.0,0.0,0.0,1.0
+/business/company_shareholder/major_shareholder_of,0.0,0.0,0.0,0.0
+/business/person/company,0.2,0.14285714285714285,0.16666666666666666,14.0
+/location/administrative_division/country,0.3076923076923077,0.34782608695652173,0.32653061224489793,23.0
+/location/country/administrative_divisions,0.07142857142857142,0.043478260869565216,0.05405405405405406,23.0
+/location/country/capital,0.375,0.13636363636363635,0.2,22.0
+/location/location/contains,0.6346153846153846,0.49624060150375937,0.5569620253164557,133.0
+/location/neighborhood/neighborhood_of,0.0,0.0,0.0,15.0
+/people/deceased_person/place_of_death,0.0,0.0,0.0,4.0
+/people/ethnicity/geographic_distribution,0.0,0.0,0.0,0.0
+/people/ethnicity/people,0.0,0.0,0.0,0.0
+/people/person/children,0.0,0.0,0.0,1.0
+/people/person/ethnicity,0.0,0.0,0.0,0.0
+/people/person/nationality,0.36363636363636365,0.2857142857142857,0.32,14.0
+/people/person/place_lived,0.0,0.0,0.0,36.0
+/people/person/place_of_birth,0.08571428571428572,0.46153846153846156,0.14457831325301204,13.0
+/people/person/profession,0.0,0.0,0.0,0.0
+/people/person/religion,0.0,0.0,0.0,0.0
+/sports/sports_team/location,0.0,0.0,0.0,0.0
+/sports/sports_team_location/teams,0.0,0.0,0.0,0.0
+accuracy,0.3,0.3,0.3,0.3
+macro avg,0.08492028804528805,0.07975076982514052,0.0736996529806286,300.0
+weighted avg,0.3679294039294039,0.3,0.3197408269919566,300.0

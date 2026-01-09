@@ -31,6 +31,8 @@ from transformers import (
     Trainer,
 )
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 # --------------------
 # Paths
@@ -136,7 +138,7 @@ def main() -> None:
         return tokenizer(
             batch[TEXT_FIELD],
             truncation=True,
-            max_length=192,  # good baseline; you can raise later
+            max_length=256,  # good baseline; you can raise later
         )
 
     tokenized = ds.map(tokenize_fn, batched=True, remove_columns=[TEXT_FIELD, "relation", "head", "tail", "meta"])
@@ -157,22 +159,37 @@ def main() -> None:
     # Some versions use evaluation_strategy, some use eval_strategy.
     common_args = dict(
         output_dir=str(MODEL_DIR),
+
+        # evaluation / saving
         save_strategy="epoch",
         logging_strategy="steps",
-        logging_steps=100,
-        learning_rate=2e-5,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=2,
-        num_train_epochs=3,
-        weight_decay=0.01,
-        warmup_ratio=0.06,
-        fp16=False,
-        bf16=False,
+        logging_steps=50,
         load_best_model_at_end=True,
         metric_for_best_model="macro_f1",
         greater_is_better=True,
         save_total_limit=2,
         report_to="none",
+
+        # training speed
+        learning_rate=2e-5,
+        num_train_epochs=5,
+        weight_decay=0.01,
+        warmup_ratio=0.06,
+
+        # GPU batching (RTX 3080 16GB)
+        per_device_train_batch_size=32,   # start here
+        per_device_eval_batch_size=64,
+
+        # mixed precision
+        fp16=True,        # use fp16 on 30-series
+        bf16=False,
+
+        # throughput
+        dataloader_num_workers=8,
+        dataloader_pin_memory=True,
+
+        # stability
+        gradient_accumulation_steps=1,
     )
 
     # Try the newer name first, fall back to older name

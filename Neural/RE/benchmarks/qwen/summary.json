@@ -1,0 +1,40 @@
+{
+  "accuracy": 0.3,
+  "macro_f1": 0.0736996529806286,
+  "micro_f1": null,
+  "num_examples": 300,
+  "top5_confusions": [
+    {
+      "gold": "/location/location/contains",
+      "pred": "/people/person/place_of_birth",
+      "count": 24
+    },
+    {
+      "gold": "/people/person/place_lived",
+      "pred": "/people/person/place_of_birth",
+      "count": 19
+    },
+    {
+      "gold": "/location/country/capital",
+      "pred": "/location/location/contains",
+      "count": 10
+    },
+    {
+      "gold": "/location/neighborhood/neighborhood_of",
+      "pred": "/location/location/contains",
+      "count": 10
+    },
+    {
+      "gold": "/location/country/administrative_divisions",
+      "pred": "/location/administrative_division/country",
+      "count": 8
+    }
+  ],
+  "settings": {
+    "max_examples": 300,
+    "seed_stride": 1,
+    "temperature": 0.0,
+    "num_predict": 256,
+    "model": "qwen2.5:7b-instruct"
+  }
+}
