@@ -172,7 +172,7 @@ def main() -> None:
 
         # training speed
         learning_rate=2e-5,
-        num_train_epochs=5,
+        num_train_epochs=10,
         weight_decay=0.01,
         warmup_ratio=0.06,
 
