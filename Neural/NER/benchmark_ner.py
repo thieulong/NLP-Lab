@@ -8,9 +8,7 @@ from transformers import pipeline
 from llm_ner import llm_ner
 
 TEXTS = [
-    "Mary saw the cat sit on the mat in New York.",
-    "Apple acquired Beats for $3 billion in 2014.",
-    "Barack Obama was born in Hawaii.",
+    "In New York, Apple CEO Tim Cook met with Tesla founder Elon Musk at Columbia University before traveling from Silicon Valley to Washington."
 ]
 
 LABEL_MAP_TO_SPACY = {

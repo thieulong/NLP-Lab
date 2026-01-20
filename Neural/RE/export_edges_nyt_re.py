@@ -1,16 +1,81 @@
-# Neural/RE/export_edges_from_nyt.py
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
 import csv
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple, Any, Optional
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+
+RELATION_RULES: Dict[str, Dict[str, Any]] = {
+    "/business/company/place_founded": {
+        "head_types": {"ORG"},
+        "tail_types": {"GPE", "LOC"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/business/company/founders": {
+        "head_types": {"ORG"},
+        "tail_types": {"PERSON"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/business/person/company": {
+        "head_types": {"PERSON"},
+        "tail_types": {"ORG"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/business/company/major_shareholders": {
+        "head_types": {"ORG"},
+        "tail_types": {"PERSON", "ORG"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/business/company_shareholder/major_shareholder_of": {
+        # Depending on your interpretation, you may want this reverse.
+        # Here: shareholder -> company
+        "head_types": {"PERSON", "ORG"},
+        "tail_types": {"ORG"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/location/location/contains": {
+        "head_types": {"GPE", "LOC"},
+        "tail_types": {"GPE", "LOC"},
+        "direction": "forward",
+        "min_conf": 0.90, 
+    },
+    "/location/country/capital": {
+        "head_types": {"GPE", "LOC"},
+        "tail_types": {"GPE", "LOC"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/people/person/place_lived": {
+        "head_types": {"PERSON"},
+        "tail_types": {"GPE", "LOC"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/people/person/place_of_birth": {
+        "head_types": {"PERSON"},
+        "tail_types": {"GPE", "LOC"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+    "/people/deceased_person/place_of_death": {
+        "head_types": {"PERSON"},
+        "tail_types": {"GPE", "LOC"},
+        "direction": "forward",
+        "min_conf": 0.80,
+    },
+}
 
 
 @dataclass
@@ -48,13 +113,11 @@ def load_label_maps(processed_dir: Path) -> Tuple[Dict[str, int], Dict[int, str]
     label2id = json.loads(label2id_path.read_text(encoding="utf-8"))
     id2label_raw = json.loads(id2label_path.read_text(encoding="utf-8"))
 
-    # id2label.json might have string keys depending on how it was written
     id2label: Dict[int, str] = {}
     for k, v in id2label_raw.items():
         try:
             id2label[int(k)] = v
         except Exception:
-            # if already int or unusual formatting
             id2label[k] = v  # type: ignore
 
     return label2id, id2label
@@ -63,7 +126,6 @@ def load_label_maps(processed_dir: Path) -> Tuple[Dict[str, int], Dict[int, str]
 def device_auto() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda")
-    # optional: mps if user runs on mac
     if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():  # type: ignore
         return torch.device("mps")
     return torch.device("cpu")
@@ -78,12 +140,6 @@ def predict_batch(
     top_k: int = 5,
     max_length: int = 256,
 ) -> Tuple[List[int], List[float], List[List[Tuple[int, float]]]]:
-    """
-    Returns:
-      pred_ids: [B]
-      pred_confs: [B]
-      topk_ids_probs: [B][(id, prob), ...] sorted desc
-    """
     enc = tokenizer(
         texts,
         padding=True,
@@ -94,10 +150,9 @@ def predict_batch(
     enc = {k: v.to(device) for k, v in enc.items()}
 
     out = model(**enc)
-    logits = out.logits  # [B, C]
+    logits = out.logits
     probs = torch.softmax(logits, dim=-1)
 
-    # Top-k
     k = min(top_k, probs.shape[-1])
     top_probs, top_ids = torch.topk(probs, k=k, dim=-1)
 
@@ -125,7 +180,6 @@ def accept_prediction(
         return False
     if len(topk) < 2:
         return conf >= min_conf
-    # margin between top1 and top2
     return (topk[0][1] - topk[1][1]) >= margin
 
 
@@ -133,63 +187,48 @@ def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
+def type_compatible(rule: Dict[str, Any], head_type: str, tail_type: str) -> bool:
+    head_ok = head_type in rule.get("head_types", set())
+    tail_ok = tail_type in rule.get("tail_types", set())
+    return head_ok and tail_ok
+
+
+def apply_direction(rule: Optional[Dict[str, Any]], head: str, tail: str) -> Tuple[str, str]:
+    if not rule:
+        return head, tail
+    direction = rule.get("direction", "forward")
+    if direction == "reverse":
+        return tail, head
+    return head, tail
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model_dir",
-        type=str,
-        default="Neural/RE/models/spanbert_nyt_re",
-        help="Path to fine-tuned model dir (contains config.json, model.safetensors, tokenizer files).",
-    )
-    parser.add_argument(
-        "--processed_dir",
-        type=str,
-        default="Neural/RE/processed",
-        help="Path to processed dir (contains label2id.json, id2label.json, JSONL splits).",
-    )
-    parser.add_argument(
-        "--input_jsonl",
-        type=str,
-        default="Neural/RE/processed/nyt_re_test.jsonl",
-        help="Which split to export from (JSONL produced by preprocess_nyt_re.py).",
-    )
-    parser.add_argument(
-        "--out_dir",
-        type=str,
-        default="Neural/RE/exports",
-        help="Where to write edges.csv / edges.jsonl / summary.",
-    )
+    parser.add_argument("--model_dir", type=str, default="Neural/RE/models/spanbert_nyt_re")
+    parser.add_argument("--processed_dir", type=str, default="Neural/RE/processed")
+    parser.add_argument("--input_jsonl", type=str, default="Neural/RE/processed/nyt_re_test.jsonl")
+    parser.add_argument("--out_dir", type=str, default="Neural/RE/exports")
 
-    # Filtering rules
-    parser.add_argument("--threshold", type=float, default=0.80, help="Accept if conf >= threshold.")
-    parser.add_argument(
-        "--min_conf",
-        type=float,
-        default=0.50,
-        help="If conf < min_conf, always reject. If >= min_conf, may accept via margin rule.",
-    )
-    parser.add_argument(
-        "--margin",
-        type=float,
-        default=0.15,
-        help="Accept if (top1 - top2) >= margin and conf >= min_conf.",
-    )
-    parser.add_argument("--top_k", type=int, default=5, help="Store top-k labels for debugging.")
-    parser.add_argument("--batch_size", type=int, default=64, help="Inference batch size.")
-    parser.add_argument("--max_length", type=int, default=256, help="Tokenizer max_length.")
-    parser.add_argument(
-        "--max_rows",
-        type=int,
-        default=0,
-        help="If >0, only process first N rows (useful for quick tests).",
-    )
+    # Global filtering rules (fallback)
+    parser.add_argument("--threshold", type=float, default=0.80)
+    parser.add_argument("--min_conf", type=float, default=0.50)
+    parser.add_argument("--margin", type=float, default=0.15)
 
-    # Optional: ignore "NA" style labels if your dataset has them
+    parser.add_argument("--top_k", type=int, default=5)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--max_length", type=int, default=256)
+    parser.add_argument("--max_rows", type=int, default=0)
+
+    parser.add_argument("--drop_labels", type=str, default="")
     parser.add_argument(
-        "--drop_labels",
-        type=str,
-        default="",
-        help="Comma-separated labels to drop from export, e.g. 'NA,no_relation'.",
+        "--enforce_schema",
+        action="store_true",
+        help="If set, apply RELATION_RULES: per-relation thresholds, type gating, direction.",
+    )
+    parser.add_argument(
+        "--strict_schema",
+        action="store_true",
+        help="If set, drop relations not found in RELATION_RULES (only when --enforce_schema).",
     )
 
     args = parser.parse_args()
@@ -216,6 +255,7 @@ def main() -> None:
     print(f"Input: {input_jsonl}")
     print(f"Out dir: {out_dir}")
     print(f"num_labels (label2id): {len(label2id)}")
+    print(f"Schema gating: {args.enforce_schema} (strict={args.strict_schema})")
     if drop_labels:
         print(f"Dropping labels: {sorted(drop_labels)}")
 
@@ -237,13 +277,11 @@ def main() -> None:
     seen = 0
     dropped_by_label = 0
     dropped_by_filter = 0
+    dropped_by_schema = 0
 
-    # We'll also track label distribution
     label_counts: Dict[str, int] = {}
 
-    with csv_path.open("w", encoding="utf-8", newline="") as f_csv, jsonl_path.open(
-        "w", encoding="utf-8"
-    ) as f_jsonl:
+    with csv_path.open("w", encoding="utf-8", newline="") as f_csv, jsonl_path.open("w", encoding="utf-8") as f_jsonl:
         writer = csv.DictWriter(
             f_csv,
             fieldnames=[
@@ -255,6 +293,8 @@ def main() -> None:
                 "text",
                 "head",
                 "tail",
+                "head_type",
+                "tail_type",
                 "split",
                 "meta",
             ],
@@ -265,7 +305,7 @@ def main() -> None:
         batch_rows: List[Dict[str, Any]] = []
 
         def flush_batch() -> None:
-            nonlocal kept, seen, dropped_by_label, dropped_by_filter
+            nonlocal kept, seen, dropped_by_label, dropped_by_filter, dropped_by_schema
             if not batch_texts:
                 return
 
@@ -284,11 +324,36 @@ def main() -> None:
                 pred_label = id2label[int(pred_id)]
                 topk_labels = [(id2label[int(i)], p) for (i, p) in topk_pairs]
 
-                # drop unwanted relations
                 if pred_label in drop_labels:
                     dropped_by_label += 1
                     continue
 
+                rule = RELATION_RULES.get(pred_label)
+
+                # ------------------ Schema gating (optional) ------------------
+                if args.enforce_schema:
+                    if rule is None:
+                        if args.strict_schema:
+                            dropped_by_schema += 1
+                            continue
+                        # if not strict, fall back to global accept_prediction below
+                    else:
+                        # per-relation min_conf
+                        if conf < float(rule.get("min_conf", args.threshold)):
+                            dropped_by_schema += 1
+                            continue
+
+                        # type gating only if types exist on this row
+                        head_type = r.get("head_type")
+                        tail_type = r.get("tail_type")
+                        if head_type and tail_type:
+                            if not type_compatible(rule, str(head_type), str(tail_type)):
+                                dropped_by_schema += 1
+                                continue
+
+                # ------------------ Confidence gating (global fallback) ------------------
+                # If schema gating is on AND rule exists, we already applied rule.min_conf above.
+                # Still apply margin rule as an extra safety when below global threshold.
                 if not accept_prediction(
                     conf=conf,
                     topk=topk_labels,
@@ -299,18 +364,23 @@ def main() -> None:
                     dropped_by_filter += 1
                     continue
 
+                # apply direction (only meaningful if schema rule exists)
+                src, tgt = apply_direction(rule, r.get("head", ""), r.get("tail", ""))
+
                 kept += 1
                 label_counts[pred_label] = label_counts.get(pred_label, 0) + 1
 
                 out_obj = {
-                    "source": r.get("head", ""),
+                    "source": src,
                     "relation": pred_label,
-                    "target": r.get("tail", ""),
+                    "target": tgt,
                     "confidence": round(float(conf), 6),
                     "topk": [(lab, round(float(p), 6)) for lab, p in topk_labels],
                     "text": r.get("text", ""),
                     "head": r.get("head", ""),
                     "tail": r.get("tail", ""),
+                    "head_type": r.get("head_type", ""),
+                    "tail_type": r.get("tail_type", ""),
                     "split": r.get("meta", {}).get("split", ""),
                     "meta": r.get("meta", {}),
                 }
@@ -325,6 +395,8 @@ def main() -> None:
                         "text": out_obj["text"],
                         "head": out_obj["head"],
                         "tail": out_obj["tail"],
+                        "head_type": out_obj["head_type"],
+                        "tail_type": out_obj["tail_type"],
                         "split": out_obj["split"],
                         "meta": json.dumps(out_obj["meta"], ensure_ascii=False),
                     }
@@ -353,16 +425,16 @@ def main() -> None:
         "max_length": args.max_length,
         "max_rows": args.max_rows,
         "drop_labels": sorted(drop_labels),
+        "enforce_schema": args.enforce_schema,
+        "strict_schema": args.strict_schema,
         "seen": seen,
         "kept": kept,
         "dropped_by_label": dropped_by_label,
         "dropped_by_filter": dropped_by_filter,
+        "dropped_by_schema": dropped_by_schema,
         "kept_ratio": (kept / seen) if seen else 0.0,
         "label_counts": dict(sorted(label_counts.items(), key=lambda kv: kv[1], reverse=True)),
-        "outputs": {
-            "csv": str(csv_path),
-            "jsonl": str(jsonl_path),
-        },
+        "outputs": {"csv": str(csv_path), "jsonl": str(jsonl_path)},
     }
     summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -371,6 +443,7 @@ def main() -> None:
     print(f"Kept: {kept}  (ratio={summary['kept_ratio']:.3f})")
     print(f"Dropped by label: {dropped_by_label}")
     print(f"Dropped by filter: {dropped_by_filter}")
+    print(f"Dropped by schema: {dropped_by_schema}")
     print(f"Wrote: {csv_path}")
     print(f"Wrote: {jsonl_path}")
     print(f"Wrote: {summary_path}")
