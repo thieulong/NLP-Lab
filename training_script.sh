@@ -1,0 +1,12 @@
+python Neural/RE/train_spanbert_nyt_re.py \
+  --proc_dir Neural/RE/processed \
+  --model_dir Neural/RE/models/spanbert_nyt_re_norel \
+  --base_model SpanBERT/spanbert-base-cased \
+  --epochs 5 \
+  --lr 2e-5 \
+  --weight_decay 0.01 \
+  --warmup_ratio 0.06 \
+  --train_bs 16 \
+  --eval_bs 32 \
+  --use_weighted_loss \
+  --weight_clip_max 20
