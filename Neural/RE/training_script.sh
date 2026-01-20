@@ -1,0 +1,24 @@
+python Neural/RE/train_spanbert_nyt_re.py \
+  --data_dir Neural/RE/processed \
+  --train_file nyt_re_train.jsonl \
+  --valid_file nyt_re_valid.jsonl \
+  --model_name_or_path SpanBERT/spanbert-base-cased \
+  --output_dir Neural/RE/models/spanbert_nyt_re_norel \
+  --max_length 256 \
+  --num_train_epochs 5 \
+  --learning_rate 2e-5 \
+  --weight_decay 0.01 \
+  --per_device_train_batch_size 16 \
+  --per_device_eval_batch_size 32 \
+  --gradient_accumulation_steps 2 \
+  --warmup_ratio 0.06 \
+  --fp16 \
+  --evaluation_strategy steps \
+  --eval_steps 1000 \
+  --save_steps 1000 \
+  --save_total_limit 2 \
+  --load_best_model_at_end \
+  --metric_for_best_model macro_f1_no_relation_excluded \
+  --greater_is_better true \
+  --use_weighted_loss \
+  --weight_clip_max 20
