@@ -1,0 +1,12 @@
+{
+  "model_dir": "Neural/RE/models/spanbert_nyt_re",
+  "data_file": "Neural/RE/processed/nyt_re_valid.jsonl",
+  "split": "valid",
+  "samples": 8442,
+  "accuracy": 0.8321487799099739,
+  "micro_f1": 0.8321487799099739,
+  "macro_f1": 0.6437433579605546,
+  "macro_f1_no_relation_excluded": null,
+  "no_relation_label": "no_relation",
+  "no_relation_id": null
+}

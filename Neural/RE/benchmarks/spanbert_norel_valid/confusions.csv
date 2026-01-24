@@ -1,0 +1,16 @@
+count,true_id,true_label,pred_id,pred_label
+461,11,/location/location/contains,9,/location/country/administrative_divisions
+293,11,/location/location/contains,10,/location/country/capital
+259,10,/location/country/capital,9,/location/country/administrative_divisions
+163,0,no_relation,11,/location/location/contains
+67,11,/location/location/contains,0,no_relation
+63,20,/people/person/place_of_birth,13,/people/deceased_person/place_of_death
+59,20,/people/person/place_of_birth,19,/people/person/place_lived
+59,0,no_relation,19,/people/person/place_lived
+50,18,/people/person/nationality,13,/people/deceased_person/place_of_death
+45,0,no_relation,18,/people/person/nationality
+44,19,/people/person/place_lived,20,/people/person/place_of_birth
+25,19,/people/person/place_lived,13,/people/deceased_person/place_of_death
+25,0,no_relation,13,/people/deceased_person/place_of_death
+25,0,no_relation,7,/business/person/company
+21,19,/people/person/place_lived,7,/business/person/company

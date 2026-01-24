@@ -1,0 +1,13 @@
+{
+  "/business/company/founders": 0.0,
+  "/business/person/company": 0.0,
+  "/location/administrative_division/country": 0.98,
+  "/location/country/administrative_divisions": 0.0,
+  "/location/country/capital": 0.345,
+  "/location/location/contains": 0.345,
+  "/location/neighborhood/neighborhood_of": 0.8,
+  "/people/deceased_person/place_of_death": 0.0,
+  "/people/person/nationality": 0.925,
+  "/people/person/place_lived": 0.455,
+  "/people/person/place_of_birth": 0.495
+}
